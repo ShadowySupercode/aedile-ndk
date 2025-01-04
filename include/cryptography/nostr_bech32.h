@@ -6,6 +6,9 @@
 //  Created by William Casarin on 2023-04-09.
 //
 
+// adapted for aedile-ndk by Finrod Felagund (finrod.felagund.97@gmail.com)
+// a.k.a. npub1ecdlntvjzexlyfale2egzvvncc8tgqsaxkl5hw7xlgjv2cxs705s9qs735
+
 #pragma once
 
 #ifndef nostr_bech32_h
@@ -20,6 +23,16 @@
 #define unlikely(x)  __builtin_expect(!!(x), 0)
 
 #define MAX_RELAYS 10
+
+#define MAX_TLVS 16
+
+#define TLV_SPECIAL 0
+#define TLV_RELAY 1
+#define TLV_AUTHOR 2
+#define TLV_KIND 3
+#define TLV_KNOWN_TLVS 4
+
+#define KEY_LENGTH 32
 
 typedef struct str_block {
     const char *start;
