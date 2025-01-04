@@ -26,9 +26,9 @@
 #include <stdio.h>
 #include <cryptography/bech32.h>
 
-static uint32_t bech32_polymod_step(uint32_t pre) {
-    uint8_t b = pre >> 25;
-    return ((pre & 0x1FFFFFF) << 5) ^
+static uint32_t bech32_polymod_step(uint32_t value) {
+    uint8_t b = value >> 25;
+    return ((value & 0x1FFFFFF) << 5) ^
         (-((b >> 0) & 1) & 0x3b6a57b2UL) ^
         (-((b >> 1) & 1) & 0x26508e6dUL) ^
         (-((b >> 2) & 1) & 0x1ea119faUL) ^
@@ -201,12 +201,15 @@ int segwit_addr_encode(char *output, const char *hrp, int witver, const uint8_t 
         fprintf(stderr, "There is no supported for protocol of number %d\n", protocol);
         return 0;
     }
+
     if (protocol == SEGWIT_BITCOIN) {
         data[0] = witver;
         bech32_convert_bits(data + 1, &datalen, 5, witprog, witprog_len, 8, 1);
         ++datalen;
         return bech32_encode(output, hrp, data, datalen, 90, enc);
     }
+
+    // for NOSTR, witver is not included in the data to be encoded
     if (protocol == SEGWIT_NOSTR) {
         bech32_convert_bits(data, &datalen, 5, witprog, witprog_len, 8, 1);
         return bech32_encode(output, hrp, data, datalen, 90, enc);
@@ -247,6 +250,7 @@ int segwit_addr_decode(int* witver, uint8_t* witdata, size_t* witdata_len, const
         return 1;
     }
 
+    // for NOSTR, witver is not to be included in the encoded data
     if (protocol == SEGWIT_NOSTR) {
         if (!bech32_convert_bits(witdata, witdata_len, 8, data, data_len, 5, 0))
             return 0;
