@@ -22,6 +22,10 @@
  * THE SOFTWARE.
  */
 
+
+// adapted for aedile-ndk by Finrod Felagund (finrod.felagund.97@gmail.com)
+// a.k.a. npub1ecdlntvjzexlyfale2egzvvncc8tgqsaxkl5hw7xlgjv2cxs705s9qs735
+
 #pragma once
 
 #ifndef LIGHTNING_COMMON_BECH32_H
@@ -123,20 +127,10 @@ int bech32_encode(
 );
 
 
-
-
 /**
- * @brief Decode a Bech32 or Bech32m string
- *
- *  Out: hrp:
- *       data:
- *       data_len:
- *  In: input:
- *      max_input_len:
- *  Returns BECH32_ENCODING_BECH32{,M} to indicate decoding was successful
- *  with the specified encoding standard. BECH32_ENCODING_NONE is returned if
- *  decoding failed.
-
+ * @brief Decode a Bech32 or Bech32m string. Decoded address
+ * will be found at the address pointed to by `data`.
+ * Will call `bech32_decode_len` if `data_len` is less than
  *
  * @param hrp Pointer to a buffer of size strlen(input) - 6. Will be
  * updated to contain the null-terminated human readable part.
@@ -156,6 +150,21 @@ bech32_encoding bech32_decode(
     size_t max_input_len
 );
 
+/**
+ * @brief Decode a Bech32 or Bech32m string. Decoded address
+ * will be found at the address pointed to by `data` if the value
+ * pointed to by`data_len` is less than or equal to `max_input_len`
+ *
+ * @param hrp Pointer to a buffer of size strlen(input) - 6. Will be
+ * updated to contain the null-terminated human readable part.
+ * @param data Pointer to a buffer of size strlen(input) - 8 that will
+ * hold the encoded 5-bit data values.
+ * @param data_len Pointer to a size_t that will be updated to be the number
+ * of entries in data.
+ * @param input Pointer to a null-terminated Bech32 string.
+ * @param max_input_len Maximum valid length of input (90 for segwit usage).
+ * @return bech32_encoding enum to specify which bech32 was just decoded
+ */
 bech32_encoding bech32_decode_len(
     char *hrp,
     uint8_t *data,

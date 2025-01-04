@@ -12,14 +12,6 @@
 #include <string.h>
 #include <stdbool.h>
 
-#define MAX_TLVS 16
-
-#define TLV_SPECIAL 0
-#define TLV_RELAY 1
-#define TLV_AUTHOR 2
-#define TLV_KIND 3
-#define TLV_KNOWN_TLVS 4
-
 struct nostr_tlv {
     uint8_t type;
     uint8_t len;
@@ -55,15 +47,12 @@ static int parse_nostr_tlv(struct cursor *cur, struct nostr_tlv *tlv) {
 }
 
 static int parse_nostr_tlvs(struct cursor *cur, struct nostr_tlvs *tlvs) {
-    int i;
+    int i = 0;
     tlvs->num_tlvs = 0;
 
-    for (i = 0; i < MAX_TLVS; i++) {
-        if (parse_nostr_tlv(cur, &tlvs->tlvs[i])) {
-            tlvs->num_tlvs++;
-        } else {
-            break;
-        }
+    while (i < MAX_TLVS && parse_nostr_tlv(cur, &tlvs->tlvs[i])) {
+        tlvs->num_tlvs++;
+        i++;
     }
 
     if (tlvs->num_tlvs == 0)
