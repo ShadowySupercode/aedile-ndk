@@ -11,17 +11,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
-struct nostr_tlv {
-    uint8_t type;
-    uint8_t len;
-    const uint8_t *value;
-};
-
-struct nostr_tlvs {
-    struct nostr_tlv tlvs[MAX_TLVS];
-    int num_tlvs;
-};
+static inline int calc_output_length(int input_len) {
+    int output_length = (int)(ceil((double)input_len * FROM_BITS / TO_BITS));
+    return output_length;
+}
 
 static int parse_nostr_tlv(struct cursor *cur, struct nostr_tlv *tlv) {
     // get the tlv tag
@@ -311,4 +306,148 @@ fail:
     free(obj->buffer);
     cur->p = start;
     return 0;
+}
+
+int encode_nostr_bech32_npub(char *pubkey, char *npub) {
+    char current_byte[3];
+
+    uint8_t input_hex[KEY_LENGTH];
+
+    for(int i=0;i<KEY_LENGTH;i++) {
+        strncpy(current_byte, pubkey + 2*i, 2);
+        input_hex[i] = (uint64_t)strtol(current_byte, NULL, 16);
+    }
+    int ret = segwit_addr_encode(npub, "npub", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR);
+
+    if (!ret) {
+        fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
+        return ret;
+    }
+}
+
+int encode_nostr_bech32_nsec(char *privkey, char *nsec) {
+    char current_byte[3];
+
+    uint8_t input_hex[KEY_LENGTH];
+
+    for(int i=0;i<KEY_LENGTH;i++) {
+        strncpy(current_byte, privkey + 2*i, 2);
+        input_hex[i] = (uint64_t)strtol(current_byte, NULL, 16);
+    }
+    int ret = segwit_addr_encode(nsec, "nsec", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR);
+
+    if (!ret) {
+        fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
+        return ret;
+    }
+}
+
+int encode_nostr_bech32_note(char *id, char *note) {
+    char current_byte[3];
+
+    uint8_t input_hex[KEY_LENGTH];
+
+    for(int i=0;i<KEY_LENGTH;i++) {
+        strncpy(current_byte, id + 2*i, 2);
+        input_hex[i] = (uint64_t)strtol(current_byte, NULL, 16);
+    }
+    int ret = segwit_addr_encode(note, "note", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR);
+
+    if (!ret) {
+        fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
+        return ret;
+    }
+}
+
+int encode_nostr_bech32_naddr(struct cursor *cur, struct bech32_naddr *obj) {
+
+}
+
+int encode_nostr_bech32_nrelay(struct cursor *cur, struct bech32_nrelay *obj) {
+
+}
+
+int encode_nostr_bech32_nevent(char *id, char *nevent, char *pubkey = nullptr, int nb_relays = 0, char **relays = nullptr) {
+
+}
+
+int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays, char **relays) {
+
+    char current_byte[3];
+
+    int input_len = 2 + KEY_LENGTH;
+
+    for (int i = 0; i < nb_relays; i++) {
+        input_len += strlen(relays[i]);
+        input_len += 2;
+    }
+    int ouput_length = calc_output_length(input_len);
+
+    uint8_t input_hex[input_len];
+    cursor cur;
+    make_cursor(input_hex, input_hex + input_len, &cur);
+    uint8_t type = 0;
+    uint8_t len = KEY_LENGTH;
+
+    int ret;
+    ret = put_byte(&cur, &type);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'put_byte'\n");
+        return ret;
+    }
+
+    ret = put_byte(&cur, &len);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'put_byte'\n");
+        return ret;
+    }
+
+    for(int i=0;i<KEY_LENGTH;i++) {
+        strncpy(current_byte, pubkey + 2*i, 2);
+        input_hex[i+2] = (uint8_t)strtol(current_byte, NULL, 16);
+    }
+    ret = move_bytes(&cur, KEY_LENGTH);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'move_bytes'\n");
+        return ret;
+    }
+
+    for (int i = 0; i < nb_relays;i++) {
+        uint8_t type = 1;
+        uint8_t len = strlen(relays[i]);
+
+        ret = put_byte(&cur, &type);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+
+        ret = put_byte(&cur, &len);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+
+        ret = put_bytes(&cur, len, (uint8_t *)relays[i]);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_bytes'\n");
+            return ret;
+        }
+    }
+
+    uint8_t data[ouput_length];
+    size_t datalen = 0;
+    ret = bech32_convert_bits(data, &datalen, TO_BITS, input_hex, input_len, FROM_BITS, 1);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'bech32_convert_bits'\n");
+        return ret;
+    }
+
+    ret = bech32_encode(nprofile, "nprofile", data, datalen, MAX_ENCODING_LENGTH, BECH32_ENCODING_BECH32);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'bech32_encode'\n");
+        return ret;
+    }
+
+    return 1;
 }
