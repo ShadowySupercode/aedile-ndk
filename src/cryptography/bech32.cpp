@@ -60,16 +60,22 @@ int bech32_encode(char *output, const char *hrp, const uint8_t *data, size_t dat
     size_t i = 0;
     while (hrp[i] != 0) {
         int ch = hrp[i];
-        if (ch < 33 || ch > 126)
+        if (ch < 33 || ch > 126) {
+            printf("#1\n");
             return 0;
+        }
 
-        if (ch >= 'A' && ch <= 'Z')
+        if (ch >= 'A' && ch <= 'Z') {
+            printf("#2\n");
             return 0;
+        }
         chk = bech32_polymod_step(chk) ^ (ch >> 5);
         ++i;
     }
-    if (i + 7 + data_len > max_input_len)
+    if (i + 7 + data_len > max_input_len) {
+        printf("#3\n");
         return 0;
+    }
     chk = bech32_polymod_step(chk);
     while (*hrp != 0) {
         chk = bech32_polymod_step(chk) ^ (*hrp & 0x1f);

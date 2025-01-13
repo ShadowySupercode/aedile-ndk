@@ -33,6 +33,12 @@
 #define TLV_KNOWN_TLVS 4
 
 #define KEY_LENGTH 32
+#define FROM_BITS 8
+#define TO_BITS 5
+#define CHECKSUM_LENGTH 6
+
+#define MAX_ENCODING_LENGTH 256
+
 
 typedef struct str_block {
     const char *start;
@@ -91,6 +97,18 @@ struct bech32_nrelay {
     struct str_block relay;
 };
 
+struct nostr_tlv {
+    uint8_t type;
+    uint8_t len;
+    const uint8_t *value;
+};
+
+struct nostr_tlvs {
+    struct nostr_tlv tlvs[MAX_TLVS];
+    int num_tlvs;
+};
+
+
 typedef struct nostr_bech32 {
     enum nostr_bech32_type type;
     uint8_t *buffer; // holds strings and tlv stuff
@@ -109,27 +127,27 @@ typedef struct nostr_bech32 {
 
 
 struct cursor {
-	unsigned char *start;
-	unsigned char *p;
-	unsigned char *end;
+    unsigned char *start;
+    unsigned char *p;
+    unsigned char *end;
 };
 
 static inline void make_cursor(uint8_t *start, uint8_t *end, struct cursor *cursor)
 {
-	cursor->start = start;
-	cursor->p = start;
-	cursor->end = end;
+    cursor->start = start;
+    cursor->p = start;
+    cursor->end = end;
 }
 
 static inline int pull_byte(struct cursor *cursor, uint8_t *c)
 {
-	if (unlikely(cursor->p >= cursor->end))
-		return 0;
+    if (unlikely(cursor->p >= cursor->end))
+        return 0;
 
-	*c = *cursor->p;
-	cursor->p++;
+    *c = *cursor->p;
+    cursor->p++;
 
-	return 1;
+    return 1;
 }
 
 static inline int pull_bytes(struct cursor *cur, int count, const uint8_t **bytes) {
@@ -138,6 +156,33 @@ static inline int pull_bytes(struct cursor *cur, int count, const uint8_t **byte
 
     *bytes = cur->p;
     cur->p += count;
+    return 1;
+}
+
+static inline int move_bytes(struct cursor *cur, int count) {
+    if (cur->p + count > cur->end)
+        return 0;
+
+    cur->p += count;
+    return 1;
+}
+
+static inline int put_byte(struct cursor *cur, uint8_t* c)  {
+    if (unlikely(cur->p >= cur->end))
+        return 0;
+
+    *(cur->p) = *c;
+    cur->p++;
+    return 1;
+}
+
+static inline int put_bytes(struct cursor *cur, int count, uint8_t *bytes) {
+    if (cur->p + count > cur->end)
+        return 0;
+
+    for(int i = 0;i < count; i++)
+        put_byte(cur, bytes + i);
+
     return 1;
 }
 
@@ -163,6 +208,8 @@ static inline int consume_until_non_alphanumeric(struct cursor *cur, int or_end)
 }
 
 int parse_nostr_bech32(struct cursor *cur, struct nostr_bech32 *obj);
+int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays = 0, char **relays = nullptr);
+int encode_nostr_bech32(struct cursor *cur, struct nostr_bech32 *obj);
 
 #endif /* nostr_bech32_h */
 
