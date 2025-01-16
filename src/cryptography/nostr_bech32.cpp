@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <math.h>
+#include <endian.h>
 
 static inline int calc_output_length(int input_len) {
     int output_length = (int)(ceil((double)input_len * FROM_BITS / TO_BITS));
@@ -134,6 +135,11 @@ static int tlvs_to_relays(struct nostr_tlvs *tlvs, struct relays *relays) {
 static uint32_t decode_tlv_u32(const uint8_t *bytes) {
     uint32_t *be32_bytes = (uint32_t*)bytes;
     return *be32_bytes;
+}
+
+static void encode_u32_tlv(const uint32_t *value, uint8_t *be32_value) {
+    uint32_t be32 = *value;
+    be32_value = (uint8_t*)&be32;
 }
 
 static int parse_nostr_bech32_nevent(struct cursor *cur, struct bech32_nevent *nevent) {
@@ -367,8 +373,149 @@ int encode_nostr_bech32_nrelay(struct cursor *cur, struct bech32_nrelay *obj) {
 
 }
 
-int encode_nostr_bech32_nevent(char *id, char *nevent, char *pubkey = nullptr, int nb_relays = 0, char **relays = nullptr) {
+int encode_nostr_bech32_nevent(char *id, char *nevent, uint32_t *kind,
+    char *pubkey, int nb_relays, char **relays) {
+    char current_byte[3];
+    int input_len = 2 + KEY_LENGTH;  // for id
 
+    if (nb_relays > 0) {
+        for (int i = 0; i < nb_relays; i++) {
+            input_len += strlen(relays[i]);
+            input_len += 2;
+        }
+    }
+
+    if (pubkey != nullptr)
+        input_len += 2 + KEY_LENGTH;  // for author
+
+    if(kind != nullptr)
+        input_len += 2 + 4;  // for kind
+
+    int ouput_length = calc_output_length(input_len);
+
+    uint8_t input_hex[input_len];
+    uint8_t placeholder[KEY_LENGTH];
+    cursor cur;
+    make_cursor(input_hex, input_hex + input_len, &cur);
+
+    uint8_t type = TLV_SPECIAL;
+    uint8_t len = KEY_LENGTH;
+
+    int ret;
+    ret = put_byte(&cur, &type);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'put_byte'\n");
+        return ret;
+    }
+
+    ret = put_byte(&cur, &len);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'put_byte'\n");
+        return ret;
+    }
+
+    for(int i=0;i<KEY_LENGTH;i++) {
+        strncpy(current_byte, id + 2*i, 2);
+        placeholder[i] = (uint8_t)strtol(current_byte, NULL, 16);
+    }
+
+    ret = put_bytes(&cur, KEY_LENGTH, placeholder);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'put_bytes'\n");
+        return ret;
+    }
+
+    if (nb_relays > 0) {
+        for (int i = 0; i < nb_relays;i++) {
+            uint8_t type = TLV_RELAY;
+            uint8_t len = strlen(relays[i]);
+
+            ret = put_byte(&cur, &type);
+            if (!ret) {
+                fprintf(stderr, "Error executing 'put_byte'\n");
+                return ret;
+            }
+
+            ret = put_byte(&cur, &len);
+            if (!ret) {
+                fprintf(stderr, "Error executing 'put_byte'\n");
+                return ret;
+            }
+
+            ret = put_bytes(&cur, len, (uint8_t *)relays[i]);
+            if (!ret) {
+                fprintf(stderr, "Error executing 'put_bytes'\n");
+                return ret;
+            }
+        }
+    }
+
+    if (pubkey != nullptr) {
+        type = TLV_AUTHOR;
+        ret = put_byte(&cur, &type);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+
+        ret = put_byte(&cur, &len);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+        for(int i=0;i<KEY_LENGTH;i++) {
+            strncpy(current_byte, pubkey + 2*i, 2);
+            placeholder[i] = (uint8_t)strtol(current_byte, NULL, 16);
+        }
+        ret = put_bytes(&cur, KEY_LENGTH, placeholder);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_bytes'\n");
+            return ret;
+        }
+    }
+
+    if (kind != nullptr) {
+        type = TLV_KIND;
+        len = 4;
+        ret = put_byte(&cur, &type);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+
+        ret = put_byte(&cur, &len);
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_byte'\n");
+            return ret;
+        }
+
+        uint8_t *kind_bytes = (uint8_t*)malloc(len);
+        encode_u32_tlv(kind, kind_bytes);
+
+        ret = put_bytes(&cur, len, kind_bytes);
+
+        if (!ret) {
+            fprintf(stderr, "Error executing 'put_bytes'\n");
+            return ret;
+        }
+        free(kind_bytes);
+    }
+
+    uint8_t data[ouput_length];
+    size_t datalen = 0;
+    ret = bech32_convert_bits(data, &datalen, TO_BITS, input_hex, input_len, FROM_BITS, 1);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'bech32_convert_bits'\n");
+        return ret;
+    }
+
+    ret = bech32_encode(nevent, "nevent", data, datalen, MAX_ENCODING_LENGTH, BECH32_ENCODING_BECH32);
+    if (!ret) {
+        fprintf(stderr, "Error executing 'bech32_encode'\n");
+        return ret;
+    }
+
+    return 1;
 }
 
 int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays, char **relays) {
@@ -386,7 +533,7 @@ int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays, ch
     uint8_t input_hex[input_len];
     cursor cur;
     make_cursor(input_hex, input_hex + input_len, &cur);
-    uint8_t type = 0;
+    uint8_t type = TLV_SPECIAL;
     uint8_t len = KEY_LENGTH;
 
     int ret;
