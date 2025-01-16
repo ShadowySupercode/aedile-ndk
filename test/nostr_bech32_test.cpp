@@ -172,4 +172,79 @@ TEST_F(Bech32Test, NprofileDecoding) {
         free(relays[i]);
     }
 }
+
+TEST_F(Bech32Test, NeventDecoding) {
+    char encoded_nevent[163] = "nevent1qqsx5u4fcsjyw3d3lz7ejfc2z5nvjpwaj90kkyrpqcvx8a9656ctwyqpzamhxue69uhhyetvv9ujumn0wd68ytnzv9hxgtczyqrgnh6cg75dxdmgjtdzjc3d0s8ac8h3jk85h3z8rkgfv64paj5lyznxtln";
+    char expected_pubkey[2*KEY_LENGTH + 1] = "0689df5847a8d3376892da29622d7c0fdc1ef1958f4bc4471d90966aa1eca9f2";
+    char expected_id[2*KEY_LENGTH + 1] = "6a72a9c4244745b1f8bd99270a1526c905dd915f6b1061061863f4baa6b0b710";
+
+    char *expected_relays[1] = {"wss://relay.nostr.band/"};
+
+    uint32_t expected_kind = 1;
+
+    struct nostr_bech32 nevent;
+
+    nevent.buffer = (uint8_t *)encoded_nevent;
+    nevent.buflen = 163;
+    nevent.type = NOSTR_BECH32_NEVENT;
+
+
+    cursor cur;
+    make_cursor(nevent.buffer, nevent.buffer + nevent.buflen, &cur);
+
+    parse_nostr_bech32(&cur, &nevent);
+    char id[2*KEY_LENGTH + 1];
+    char pubkey[2*KEY_LENGTH + 1];
+
+    for (int i=0;i<KEY_LENGTH;i++) {
+        sprintf(id + i*2, "%.2x", nevent.data.nevent.event_id[i]);
+    }
+
+    ASSERT_EQ(
+        strcmp(id, expected_id), 0
+    );
+
+    for (int i=0;i<KEY_LENGTH;i++) {
+        sprintf(pubkey + i*2, "%.2x", nevent.data.nevent.pubkey[i]);
+    }
+
+    ASSERT_EQ(
+        strcmp(pubkey, expected_pubkey), 0
+    );
+
+    int num_relays = nevent.data.nevent.relays.num_relays;
+    char *relays[num_relays];
+
+
+    for (int i = 0; i < num_relays; i++) {
+        int length = nevent.data.nevent.relays.relays[i].end - nevent.data.nevent.relays.relays[i].start;
+        relays[i] = (char*)malloc(length);
+        strncpy(relays[i], nevent.data.nevent.relays.relays[i].start, length);
+        ASSERT_EQ(strcmp(relays[i], expected_relays[i]), 0);
+        free(relays[i]);
+    }
+
+    if (nevent.data.nevent.has_kind)
+        ASSERT_EQ(expected_kind, nevent.data.nevent.kind);
+
+}
+
+TEST_F(Bech32Test, NeventEncoding) {
+    char expected_nevent[163] = "nevent1qqsx5u4fcsjyw3d3lz7ejfc2z5nvjpwaj90kkyrpqcvx8a9656ctwyqpzamhxue69uhhyetvv9ujumn0wd68ytnzv9hxgtczyqrgnh6cg75dxdmgjtdzjc3d0s8ac8h3jk85h3z8rkgfv64paj5lyznxtln";
+    char pubkey[2*KEY_LENGTH + 1] = "0689df5847a8d3376892da29622d7c0fdc1ef1958f4bc4471d90966aa1eca9f2";
+    char id[2*KEY_LENGTH + 1] = "6a72a9c4244745b1f8bd99270a1526c905dd915f6b1061061863f4baa6b0b710";
+    char *relays[1] = {"wss://relay.nostr.band/"};
+
+    char output[256];
+
+    if (!encode_nostr_bech32_nevent(id, output, nullptr, pubkey, 1, relays))
+        FAIL() << "Failed to encode nevent\n";
+
+    ASSERT_EQ(
+        strcmp(output, expected_nevent), 0
+    );
+
+
+}
+
 }
