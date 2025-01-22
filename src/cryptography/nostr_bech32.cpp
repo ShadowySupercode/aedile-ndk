@@ -107,7 +107,7 @@ static int parse_nostr_bech32_npub(struct cursor *cur, struct bech32_npub *npub)
 }
 
 static int parse_nostr_bech32_nsec(struct cursor *cur, struct bech32_nsec *nsec) {
-    return pull_bytes(cur, 32, &nsec->nsec);
+    return pull_bytes(cur, 32, &nsec->privkey);
 }
 
 static int tlvs_to_relays(struct nostr_tlvs *tlvs, struct relays *relays) {
