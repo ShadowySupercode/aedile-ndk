@@ -14,6 +14,7 @@ class Bech32Test: public testing::Test {
 
 TEST_F(Bech32Test, NpubEncoding) {
     char output[KEY_LENGTH*2 + 1];
+    char expected_output[KEY_LENGTH*2 + 1] = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
     char input[KEY_LENGTH*2 + 1] = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
     char current_byte[3];
 
@@ -26,7 +27,17 @@ TEST_F(Bech32Test, NpubEncoding) {
     if (!segwit_addr_encode(output, "npub", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR))
         FAIL();
 
-    ASSERT_EQ(strcmp(output, "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6"), 0);
+    ASSERT_EQ(strcmp(output, expected_output), 0);
+}
+
+TEST_F(Bech32Test, NpubEncoding1) {
+    char output[KEY_LENGTH*2 + 1];
+    char expected_output[KEY_LENGTH*2 + 1] = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
+    char input[KEY_LENGTH*2 + 1] = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+    if (!encode_nostr_bech32_npub(input, output))
+        FAIL() << "Failed to execute 'encode_nostr_bech32_npub'\n";
+
+    ASSERT_EQ(strcmp(output, expected_output), 0);
 }
 
 TEST_F(Bech32Test, NpubDecoding) {
@@ -50,6 +61,8 @@ TEST_F(Bech32Test, NpubDecoding) {
 TEST_F(Bech32Test, NsecEncoding) {
     char output[KEY_LENGTH*2 + 1];
     char input[KEY_LENGTH*2 + 1] = "67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa";
+    char expected_output[KEY_LENGTH*2 + 1] = "nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5";
+
     char current_byte[3];
 
     uint8_t input_hex[KEY_LENGTH];
@@ -62,7 +75,17 @@ TEST_F(Bech32Test, NsecEncoding) {
     if(!segwit_addr_encode(output, "nsec", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR))
         FAIL();
 
-    ASSERT_EQ(strcmp(output, "nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5"), 0);
+    ASSERT_EQ(strcmp(output, expected_output), 0);
+}
+
+TEST_F(Bech32Test, NsecEncoding1) {
+    char output[KEY_LENGTH*2 + 1];
+    char expected_output[KEY_LENGTH*2 + 1] = "nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5";
+    char input[KEY_LENGTH*2 + 1] = "67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa";
+    if (!encode_nostr_bech32_nsec(input, output))
+        FAIL() << "Failed to execute 'encode_nostr_bech32_npub'\n";
+
+    ASSERT_EQ(strcmp(output, expected_output), 0);
 }
 
 TEST_F(Bech32Test, NsecDecoding) {
@@ -86,6 +109,8 @@ TEST_F(Bech32Test, NsecDecoding) {
 TEST_F(Bech32Test, NoteEncoding) {
     char output[KEY_LENGTH*2 + 1];
     char input[KEY_LENGTH*2 + 1] = "7cc7cc7eb9a1012079adef2bce95008c820f77c5a12bc6ed1a22ed6db79dd8bd";
+    char expected_output[KEY_LENGTH*2 + 1] = "note10nrucl4e5yqjq7ddau4ua9gq3jpq7a795y4udmg6ytkkmduamz7semt62g";
+
     char current_byte[3];
 
     uint8_t input_hex[KEY_LENGTH];
@@ -98,7 +123,19 @@ TEST_F(Bech32Test, NoteEncoding) {
     if (!segwit_addr_encode(output, "note", 0, input_hex, KEY_LENGTH, SEGWIT_NOSTR))
         FAIL();
 
-    ASSERT_EQ(strcmp(output, "note10nrucl4e5yqjq7ddau4ua9gq3jpq7a795y4udmg6ytkkmduamz7semt62g"), 0);
+    ASSERT_EQ(strcmp(output, expected_output), 0);
+}
+
+TEST_F(Bech32Test, NoteEncoding1) {
+    char output[KEY_LENGTH*2 + 1];
+    char input[KEY_LENGTH*2 + 1] = "7cc7cc7eb9a1012079adef2bce95008c820f77c5a12bc6ed1a22ed6db79dd8bd";
+    char expected_output[KEY_LENGTH*2 + 1] = "note10nrucl4e5yqjq7ddau4ua9gq3jpq7a795y4udmg6ytkkmduamz7semt62g";
+
+    int ret = encode_nostr_bech32_note(input, output);
+    if(!ret)
+        FAIL() << "Failed to execute 'encode_nostr_bech32_note'\n";
+
+    ASSERT_EQ(strcmp(output, expected_output), 0);
 }
 
 TEST_F(Bech32Test, NoteDecoding) {
@@ -112,7 +149,6 @@ TEST_F(Bech32Test, NoteDecoding) {
     make_cursor((uint8_t*)encoded_note, (uint8_t*)encoded_note + strlen(encoded_note), &cur);
     parse_nostr_bech32(&cur, &note);
 
-    note.data.note.event_id;
     for (int i=0;i<KEY_LENGTH;i++) {
         sprintf(id + i*2, "%.2x", note.data.note.event_id[i]);
     }
@@ -357,9 +393,6 @@ TEST_F(Bech32Test, NaddrEncoding) {
 
     if (!encode_nostr_bech32_naddr(tag, &kind, pubkey, output, 1, relays))
         FAIL() << "Failed to encode naddr\n";
-
-    printf("output: %s\n", output);
-    printf("expected_naddr: %s\n", expected_naddr);
 
     ASSERT_EQ(
         strcmp(output, expected_naddr), 0
