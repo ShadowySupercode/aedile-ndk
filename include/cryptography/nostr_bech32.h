@@ -70,7 +70,7 @@ struct bech32_npub {
 };
 
 struct bech32_nsec {
-    const uint8_t *nsec;
+    const uint8_t *privkey;
 };
 
 struct bech32_nevent {
