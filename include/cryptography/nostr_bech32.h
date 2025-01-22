@@ -88,7 +88,8 @@ struct bech32_nprofile {
 
 struct bech32_naddr {
     struct relays relays;
-    struct str_block identifier;
+    // struct str_block identifier;
+    char *identifier;
     const uint8_t *pubkey;
     uint32_t kind;
 };
@@ -214,6 +215,8 @@ int encode_nostr_bech32_nsec(char *privkey, char *nsec);
 int encode_nostr_bech32_note(char *id, char *note);
 int encode_nostr_bech32_nevent(char *id, char *nevent, uint32_t *kind = nullptr,
     char *pubkey = nullptr, int nb_relays = 0, char **relays = nullptr);
+
+int encode_nostr_bech32_naddr(char *tag, uint32_t *kind, char *pubkey, char *naddr, int nb_relays = 0, char **relays = nullptr);
 
 int encode_nostr_bech32(struct cursor *cur, struct nostr_bech32 *obj);
 
