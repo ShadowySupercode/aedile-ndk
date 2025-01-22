@@ -209,14 +209,14 @@ static inline int consume_until_non_alphanumeric(struct cursor *cur, int or_end)
 }
 
 int parse_nostr_bech32(struct cursor *cur, struct nostr_bech32 *obj);
-int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays = 0, char **relays = nullptr);
+int encode_nostr_bech32_nprofile(char *pubkey, char *nprofile, int nb_relays, char **relays);
 int encode_nostr_bech32_npub(char *pubkey, char *npub);
 int encode_nostr_bech32_nsec(char *privkey, char *nsec);
 int encode_nostr_bech32_note(char *id, char *note);
-int encode_nostr_bech32_nevent(char *id, char *nevent, uint32_t *kind = nullptr,
-    char *pubkey = nullptr, int nb_relays = 0, char **relays = nullptr);
+int encode_nostr_bech32_nevent(char *id, char *nevent, uint32_t *kind,
+    char *pubkey, int nb_relays, char **relays);
 
-int encode_nostr_bech32_naddr(char *tag, uint32_t *kind, char *pubkey, char *naddr, int nb_relays = 0, char **relays = nullptr);
+int encode_nostr_bech32_naddr(char *tag, uint32_t *kind, char *pubkey, char *naddr, int nb_relays, char **relays);
 
 int encode_nostr_bech32(struct cursor *cur, struct nostr_bech32 *obj);
 
