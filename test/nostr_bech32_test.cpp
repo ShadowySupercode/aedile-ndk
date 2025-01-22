@@ -243,8 +243,72 @@ TEST_F(Bech32Test, NeventEncoding) {
     ASSERT_EQ(
         strcmp(output, expected_nevent), 0
     );
+}
+
+TEST_F(Bech32Test, NaddrDecoding) {
+    char encoded_naddr[141] = "naddr1qqxnzdenxu6rxvp4xyenxvpsqythwumn8ghj7un9d3shjtnwdaehgu3wvfskuep0qgs82et8gqsfjcx8fl3h8e55879zr2ufdzyas6gjw6nqlp42m0y0j2srqsqqqa285r8tkj";
+    char expected_pubkey[65] = "75656740209960c74fe373e6943f8a21ab896889d8691276a60f86aadbc8f92a";
+    char *expected_relays[1] = {"wss://relay.nostr.band/"};
+    char expected_identifier[14] = "1737430513300";
+    uint32_t expected_num_relays = 1, expected_kind = 30023;
+
+    struct nostr_bech32 naddr;
+
+    naddr.buffer = (uint8_t *)encoded_naddr;
+    naddr.buflen = 141;
+    naddr.type = NOSTR_BECH32_NADDR;
+
+    cursor cur;
+    make_cursor(naddr.buffer, naddr.buffer + naddr.buflen, &cur);
+    parse_nostr_bech32(&cur, &naddr);
+    char id[2*KEY_LENGTH + 1];
+    char pubkey[2*KEY_LENGTH + 1];
+
+    char *identifier = naddr.data.naddr.identifier;
+
+    ASSERT_EQ(strcmp(expected_identifier, identifier), 0);
+
+    for (int i=0;i<KEY_LENGTH;i++) {
+        sprintf(pubkey + i*2, "%.2x", naddr.data.naddr.pubkey[i]);
+    }
+    ASSERT_EQ(strcmp(expected_pubkey, pubkey), 0);
+
+    int num_relays = naddr.data.naddr.relays.num_relays;
+
+    ASSERT_EQ(num_relays, expected_num_relays);
+
+    char *relays[num_relays];
+    for (int i = 0; i < num_relays; i++) {
+        int length = naddr.data.naddr.relays.relays[i].end - naddr.data.naddr.relays.relays[i].start;
+        relays[i] = (char*)malloc(length);
+        strncpy(relays[i], naddr.data.naddr.relays.relays[i].start, length);
+
+        ASSERT_EQ(strcmp(expected_relays[i], relays[i]), 0);
 
 
+        free(relays[i]);
+    }
+    ASSERT_EQ(naddr.data.naddr.kind, expected_kind);
+}
+
+TEST_F(Bech32Test, NaddrEncoding) {
+    char expected_naddr[141] = "naddr1qqxnzdenxu6rxvp4xyenxvpsqythwumn8ghj7un9d3shjtnwdaehgu3wvfskuep0qgs82et8gqsfjcx8fl3h8e55879zr2ufdzyas6gjw6nqlp42m0y0j2srqsqqqa285r8tkj";
+    char pubkey[2*KEY_LENGTH + 1] = "75656740209960c74fe373e6943f8a21ab896889d8691276a60f86aadbc8f92a";
+    char tag[14] = "1737430513300";
+    char *relays[1] = {"wss://relay.nostr.band/"};
+    uint32_t kind = 30023;
+
+    char output[256];
+
+    if (!encode_nostr_bech32_naddr(tag, &kind, pubkey, output, 1, relays))
+        FAIL() << "Failed to encode naddr\n";
+
+    printf("output: %s\n", output);
+    printf("expected_naddr: %s\n", expected_naddr);
+
+    ASSERT_EQ(
+        strcmp(output, expected_naddr), 0
+    );
 }
 
 }
