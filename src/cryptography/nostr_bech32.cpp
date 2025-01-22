@@ -330,6 +330,8 @@ int encode_nostr_bech32_npub(char *pubkey, char *npub) {
         fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
         return ret;
     }
+
+    return 1;
 }
 
 int encode_nostr_bech32_nsec(char *privkey, char *nsec) {
@@ -347,6 +349,8 @@ int encode_nostr_bech32_nsec(char *privkey, char *nsec) {
         fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
         return ret;
     }
+
+    return 1;
 }
 
 int encode_nostr_bech32_note(char *id, char *note) {
@@ -364,6 +368,8 @@ int encode_nostr_bech32_note(char *id, char *note) {
         fprintf(stderr, "Error executing 'segwit_addr_encode'\n");
         return ret;
     }
+
+    return 1;
 }
 
 int encode_nostr_bech32_naddr(char *tag, uint32_t *kind, char *pubkey, char *naddr,
