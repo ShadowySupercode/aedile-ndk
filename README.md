@@ -25,7 +25,7 @@ This project uses CMake as its build system, and vcpkg as its dependency manager
 CMake invokes vcpkg at the start of the configure process to install some of the project's dependencies.  For this step to succeed, ensure that the `VCPKG_ROOT` environment variable is set to the path of your vcpkg installation.
 
 We have included vcpkg as a git submodule that needs to initialized and updated. The `VCPK_ROOT` is already
-set within the `CMakePresets.json` file, so all that needs to be done is jusst initializing the submodule
+set within the `CMakePresets.json` file, so all that needs to be done is simply initializing the submodule
 and building the code.
 
 ```bash
