@@ -2,7 +2,6 @@
 #include <stdexcept>
 
 #include "data/data.hpp"
-#include "cryptography/nostr_bech32.h"
 
 using namespace nlohmann;
 using namespace nostr::data;
@@ -48,117 +47,6 @@ Event Event::fromJson(json j)
     Event event = j.get<Event>();
     return event;
 };
-
-std::string Event::toBech32Note()
-{
-    char *note = (char *)malloc(KEY_LENGTH*2 + 1);
-    int ret = encode_nostr_bech32_note((char *)this->id.c_str(), note);
-    if (!ret)
-    {
-        throw invalid_argument(
-            "Event::toBech32Note: encode_nostr_bech32_note function failed to return true.");
-    }
-    std::string str_note = std::string(note);
-    free(note);
-    return str_note;
-}
-
-std::string Event::toBech32Naddr()
-{
-    std::string tag = "";
-
-    // look for 'd' tag, if found save it.
-    for (auto t: this->tags)
-    {
-        if (t[0] == "d")
-        {
-            tag = t[1];
-            break;
-        }
-    }
-
-    uint32_t kind = (uint32_t)this->kind;
-    char *pubkey = (char *)this->pubkey.c_str();
-
-    // add up the data lengths accouting for TLV to know
-    // the size of the naddr encoding output;
-    // 2 bytes for type and length and then length bytes for each entry
-    int naddr_len = 2 + strlen(pubkey) + 2 + tag.length() + 2 + 4;
-
-    char **relays;
-    *relays = (char *)malloc(this->relays.size());
-
-    // convert relays vector to char**
-    for (int i = 0; i < this->relays.size(); i++) {
-        naddr_len += 2 + this->relays[i].length();
-        relays[i] = (char *)malloc(this->relays[i].length());
-        relays[i] = (char *)this->relays[i].c_str();
-    }
-
-    char *naddr = (char *)malloc(naddr_len);
-
-    int ret = encode_nostr_bech32_naddr((char *)tag.c_str(), &kind, pubkey, naddr, this->relays.size(), relays);
-    if (!ret)
-    {
-        throw invalid_argument(
-            "Event::toBech32Note: encode_nostr_bech32_note function failed to return true.");
-    }
-    std::string str_naddr = std::string(naddr);
-    free(naddr);
-    return str_naddr;
-}
-
-std::string Event::toBech32Nevent()
-{
-    int ret;
-
-    // add up the data lengths accouting for TLV to know
-    // the size of the naddr encoding output;
-    // 2 bytes for type and length and then length bytes for each entry
-    int nevent_len = 2 + this->pubkey.length() + 2 + this->id.length() + 2 + 4;
-
-    char **relays;
-    *relays = (char *)malloc(this->relays.size());
-
-    // convert relays vector to char**
-    for (int i = 0; i < this->relays.size(); i++)
-    {
-        nevent_len += 2 + this->relays[i].length();
-        relays[i] = (char *)malloc(this->relays[i].length());
-        relays[i] = (char *)this->relays[i].c_str();
-    }
-
-    char *nevent = (char *)malloc(nevent_len);
-
-    if (this->kind > 1) {
-        ret = encode_nostr_bech32_nevent(
-            (char *)this->id.c_str(), nevent, (uint32_t *)&this->kind,
-            (char *)this->pubkey.c_str(), this->relays.size(), relays);
-
-        if (!ret)
-        {
-            throw invalid_argument(
-                "Event::toBech32Nevent: encode_nostr_bech32_nevent function failed to return true.");
-        }
-    }
-    else
-    {
-        ret = encode_nostr_bech32_nevent(
-            (char *)this->id.c_str(), nevent, nullptr,
-            (char *)this->pubkey.c_str(), this->relays.size(), relays);
-
-        if (!ret)
-        {
-            throw invalid_argument(
-                "Event::toBech32Nevent: encode_nostr_bech32_nevent without kind function failed to return true.");
-        }
-    }
-
-    std::string str_nevent = std::string(nevent);
-    free(nevent);
-    return str_nevent;
-
-}
 
 void Event::validate()
 {

@@ -4,8 +4,8 @@
 #include "client/web_socket_client.hpp"
 #include "service/nostr_service_base.hpp"
 #include "signer/signer.hpp"
-#include "cryptography/bech32.h"
-#include "cryptography/nostr_bech32.h"
+#include <cryptography/bech32.hpp>
+#include <cryptography/nostr_bech32.hpp>
 
 // namespace nostr
 // {
