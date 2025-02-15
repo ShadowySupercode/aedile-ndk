@@ -52,27 +52,6 @@ struct Event
     static Event fromJson(nlohmann::json j);
 
     /**
-     * @brief Encode this event object using bech32 note encoding
-     *
-     * @return std::string containing the encoded note string
-     */
-    std::string toBech32Note();
-
-    /**
-     * @brief Encode this event object using bech32 naddr encoding
-     *
-     * @return std::string containing the encoded naddr string
-     */
-    std::string toBech32Naddr();
-
-    /**
-     * @brief Encode this event object using bech32 nevent encoding
-     *
-     * @return std::string containing the encoded nevent string
-     */
-    std::string toBech32Nevent();
-
-    /**
      * @brief Compares two events for equality.
      * @remark Two events are considered equal if they have the same ID, since the ID is uniquely
      * generated from the event data.  If the `id` field is empty for either event, the comparison
