@@ -66,11 +66,11 @@ std::string NoscryptCipher::update(
     */
     if (this->_cipher.mode() == NoscryptCipherMode::CIPHER_MODE_ENCRYPT)
     {
-		//A secure random initialization vector is needed for encryption operations
-		NostrSecureRng::fill(this->_ivBuffer);
+        //A secure random initialization vector is needed for encryption operations
+        NostrSecureRng::fill(this->_ivBuffer);
     }
 
-    //Performs the operation (either encryption or decryption) 
+    //Performs the operation (either encryption or decryption)
     result = this->_cipher.update(libContext, localKey, remoteKey);
     if (result != NC_SUCCESS)
     {
@@ -107,7 +107,7 @@ string NoscryptCipher::naiveEncodeBase64(const std::string& str)
 {
     // Compute base64 size and allocate a string buffer of that size.
     const size_t encodedSize = NoscryptCipher::base64EncodedSize(str.size());
-    
+
     auto encodedData = make_unique<uint8_t>(encodedSize);
 
     // Encode the input string to base64.
@@ -128,7 +128,7 @@ string NoscryptCipher::naiveDecodeBase64(const string& str)
 {
     // Compute the size of the decoded string and allocate a buffer of that size.
     const size_t decodedSize = NoscryptCipher::base64DecodedSize(str.size());
-  
+
     auto decodedData = make_unique<uint8_t>(decodedSize);
 
     // Decode the input string from base64.

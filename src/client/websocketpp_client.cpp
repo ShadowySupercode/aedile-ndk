@@ -6,7 +6,7 @@ using namespace nostr::client;
 using namespace std;
 
 void WebsocketppClient::start()
-{ 
+{
     this->_client.init_asio();
     this->_client.start_perpetual();
 };
@@ -22,7 +22,7 @@ void WebsocketppClient::openConnection(string uri)
     error_code error;
     websocketpp_client::connection_ptr connection = this->_client.get_connection(uri, error);
 
-    if (error.value() == -1)    
+    if (error.value() == -1)
     {
         // PLOG_ERROR << "Error connecting to relay " << relay << ": " << error.message();
     }
@@ -60,7 +60,7 @@ tuple<string, bool> WebsocketppClient::send(string message, string uri)
         websocketpp::frame::opcode::text,
         error);
 
-    if (error.value() == -1)    
+    if (error.value() == -1)
     {
         return make_tuple(uri, false);
     }
@@ -109,6 +109,6 @@ void WebsocketppClient::closeConnection(string uri)
         websocketpp::close::status::going_away,
         "_client requested close."
     );
-    
+
     this->_connectionHandles.erase(uri);
 };

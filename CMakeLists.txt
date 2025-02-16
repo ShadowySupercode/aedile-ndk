@@ -9,7 +9,8 @@ project(aedile VERSION 0.0.3)
 include(ExternalProject)
 include(FetchContent)
 
-# Specify the C++ standard
+# Specify the C/C++ standard
+set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -68,25 +69,13 @@ FetchContent_MakeAvailable(libnoscrypt)
 FetchContent_GetProperties(libnoscrypt)
 
 #======== Build the project ========#
-set(AEDILE_HEADERS
-    "include/nostr.hpp"
-    "include/client/web_socket_client.hpp"
-    "include/client/websocketpp_client.hpp"
-    "include/data/data.hpp"
-    "include/service/nostr_service_base.hpp"
-    "include/service/nostr_service.hpp"
-    "include/service/nostr_service_specializations.hpp"
-    "include/signer/signer.hpp"
-    "include/signer/noscrypt_signer.hpp"
-    "src/cryptography/noscrypt_cipher.hpp"
-    "src/cryptography/nostr_secure_rng.hpp"
-    "src/internal/noscrypt_logger.hpp"
-)
 
 set(AEDILE_SOURCES
     "src/client/websocketpp_client.cpp"
     "src/cryptography/noscrypt_cipher.cpp"
     "src/cryptography/nostr_secure_rng.cpp"
+    "src/cryptography/bech32.cpp"
+    "src/cryptography/nostr_bech32.cpp"
     "src/data/event.cpp"
     "src/data/filters.cpp"
     "src/internal/noscrypt_logger.cpp"
@@ -94,7 +83,11 @@ set(AEDILE_SOURCES
     "src/signer/noscrypt_signer.cpp"
 )
 
-add_library(aedile ${AEDILE_SOURCES} ${AEDILE_HEADERS})
+list(APPEND INCLUDE_DIR ./include)
+list(APPEND INCLUDE_DIR ${CMAKE_SOURCE_DIR}/build/linux/_deps/uuid_v4-src/)
+list(APPEND INCLUDE_DIR ${libnoscrypt_SOURCE_DIR}/include)
+
+add_library(aedile ${AEDILE_SOURCES})
 target_link_libraries(aedile PRIVATE
     nlohmann_json::nlohmann_json
     OpenSSL::SSL
@@ -103,8 +96,7 @@ target_link_libraries(aedile PRIVATE
     websocketpp::websocketpp
     noscrypt
 )
-target_include_directories(aedile PRIVATE include)
-target_include_directories(aedile PRIVATE ${libnoscrypt_SOURCE_DIR}/include)
+target_include_directories(aedile PUBLIC ${INCLUDE_DIR})
 set_target_properties(aedile PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
 
 #======== Build the tests ========#
@@ -124,10 +116,10 @@ if(AEDILE_INCLUDE_TESTS)
 
     enable_testing()
 
-    set(TEST_DIR ./test)
     set(TEST_SOURCES
         "test/nostr_event_test.cpp"
         "test/nostr_service_base_test.cpp"
+        "test/nostr_bech32_test.cpp"
     )
 
     add_executable(aedile_test ${TEST_SOURCES})
@@ -138,9 +130,7 @@ if(AEDILE_INCLUDE_TESTS)
         aedile
         nlohmann_json::nlohmann_json
     )
-    target_include_directories(aedile_test PRIVATE include)
-    target_include_directories(aedile_test PRIVATE src)
-    target_include_directories(aedile_test PRIVATE ${libnoscrypt_SOURCE_DIR}/include)
+    target_include_directories(aedile_test PUBLIC ${INCLUDE_DIR})
     set_target_properties(aedile_test PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
 
     gtest_add_tests(TARGET aedile_test)

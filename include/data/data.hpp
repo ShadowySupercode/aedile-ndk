@@ -15,8 +15,8 @@ namespace data
 {
 /**
  * @brief A Nostr event.
- * @remark All data transmitted over the Nostr protocol is encoded in JSON blobs.  This struct
- * is common to every Nostr event kind.  The significance of each event is determined by the
+ * @remark All data transmitted over the Nostr protocol is encoded in JSON blobs. This struct
+ * is common to every Nostr event kind. The significance of each event is determined by the
  * `tags` and `content` fields.
 */
 struct Event
@@ -28,6 +28,7 @@ struct Event
     std::vector<std::vector<std::string>> tags; ///< Arbitrary event metadata.
     std::string content; ///< Event content.
     std::string sig; ///< Event signature created with the private key of the event creator.
+    std::vector<std::string> relays; ///< relay in which the entity the event is more likely to be found
 
     /**
      * @brief Serializes the event to a JSON object.
@@ -49,6 +50,27 @@ struct Event
      * @returns An event instance created from the JSON object.
      */
     static Event fromJson(nlohmann::json j);
+
+    /**
+     * @brief Encode this event object using bech32 note encoding
+     *
+     * @return std::string containing the encoded note string
+     */
+    std::string toBech32Note();
+
+    /**
+     * @brief Encode this event object using bech32 naddr encoding
+     *
+     * @return std::string containing the encoded naddr string
+     */
+    std::string toBech32Naddr();
+
+    /**
+     * @brief Encode this event object using bech32 nevent encoding
+     *
+     * @return std::string containing the encoded nevent string
+     */
+    std::string toBech32Nevent();
 
     /**
      * @brief Compares two events for equality.
