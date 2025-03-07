@@ -2,8 +2,10 @@
 #include <gtest/gtest.h>
 
 #include "data/data.hpp"
+#include "cryptography/nostr_bech32.hpp"
 
 using namespace nostr::data;
+using namespace nostr::encoding;
 using namespace std;
 using namespace ::testing;
 
@@ -22,6 +24,28 @@ shared_ptr<Event> testEvent()
     event->content = "Hello, World!";
 
     return event;
+}
+
+shared_ptr<Event> testBech32()
+{
+    auto event = make_shared<Event>();
+
+    event->pubkey = "dc4cd086cd7ce5b1832adf4fdd1211289880d2c7e295bcb0e684c01acee77c06";
+    event->id = "bf39598ec3b67e208e26f54e3744e5adf5221dbf1c480f9b673f21dddac8c7ef";
+    event->createdAt = 1741372469;
+    event->kind = 30023;
+    event->tags = {
+        { "d", "mfayffebPrMI520ftzIlE" }
+    };
+    event->content = "Hello, World!";
+
+    return event;
+}
+
+shared_ptr<NostrEvent> makeNostrEvent()
+{
+    auto base_event = testBech32();
+    return std::make_shared<NostrEvent>(NostrEvent(base_event));
 }
 
 TEST(NostrEventTest, Equivalent_Events_Have_Same_ID)
@@ -90,3 +114,30 @@ TEST(NostrEventTest, Special_Characters_Are_Escaped_When_Serialized)
     EXPECT_THAT(serializedBackslash, HasSubstr("\\\\"));
 }
 
+TEST(NostrEventTest, Bech32_On_Wrapper_Class)
+{
+    auto nostr_event = makeNostrEvent();
+    std::string naddr = nostr_event->toNaddr();
+    std::string note = nostr_event->toNote();
+    std::string nevent = nostr_event->toNevent();
+
+    ASSERT_FALSE(naddr.empty());
+    ASSERT_FALSE(note.empty());
+    ASSERT_FALSE(nevent.empty());
+
+    NostrEvent decoded = NostrEvent();
+    decoded.fromNaddr(naddr);
+    std::string reencoded_naddr = decoded.toNaddr();
+
+    ASSERT_EQ(reencoded_naddr, naddr);
+
+    decoded = NostrEvent();
+    decoded.fromNote(note);
+    std::string reencoded_note = decoded.toNote();
+    ASSERT_EQ(reencoded_note, note);
+
+    decoded = NostrEvent();
+    decoded.fromNevent(nevent);
+    std::string reencoded_nevent = decoded.toNevent();
+    ASSERT_EQ(reencoded_nevent, nevent);
+}

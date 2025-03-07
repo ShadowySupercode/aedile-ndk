@@ -108,6 +108,27 @@ private:
      */
     void validate();
 };
+
+class NostrEvent
+{
+public:
+    NostrEvent();
+    NostrEvent(std::string jsonString);
+    NostrEvent(nlohmann::json j);
+    NostrEvent(std::shared_ptr<Event> e);
+    bool operator==(const NostrEvent& other) const;
+
+    std::shared_ptr<Event> data;
+
+    std::string toNote();
+    std::string toNevent();
+    std::string toNaddr();
+
+    void fromNote(std::string &encoding);
+    void fromNevent(std::string &encoding);
+    void fromNaddr(std::string &encoding);
+};
+
 } // namespace data
 } // namespace nostr
 
