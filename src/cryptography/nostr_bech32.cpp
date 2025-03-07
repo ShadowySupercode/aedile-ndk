@@ -26,7 +26,10 @@ bool isValidHex(std::string hex_string)
 bool convertHexStringToByteArray(std::string &hex, BytesArray &array)
 {
     if (!isValidHex(hex))
+    {
         std::cerr << "String: '" << hex << "' is not a valid hex string\n";
+        return false;
+    }
 
     std::size_t arraySize = hex.size() / 2;
     for(int i=0; i<arraySize; i++)
@@ -34,6 +37,19 @@ bool convertHexStringToByteArray(std::string &hex, BytesArray &array)
         array.push_back(std::stol(hex.substr(2*i, 2), nullptr, 16));
     }
 
+    return true;
+}
+
+bool convertByteArrayToHexString(BytesArray &array, std::string &hex)
+{
+    std::stringstream ss;
+    char placeholder[3];
+    for(uint8_t &byte : array)
+    {
+        sprintf(placeholder, "%02x", byte);
+        ss << placeholder;
+    }
+    hex = ss.str();
     return true;
 }
 
@@ -347,6 +363,384 @@ bool NostrBech32::encodeNostrBech32(NostrBech32Encoding &input, std::string &enc
     return true;
 }
 
+bool NostrBech32::parseTlv(BytesArray &encoding, NostrTlv &tlv, int &cur)
+{
+    tlv.type = encoding[cur++];
+
+    // unknown, fail!
+    if (tlv.type >= TLV_KNOWN_TLVS)
+        return false;
+
+    tlv.len = encoding[cur++];
+
+    // is the reported length greater then our buffer? if so fail
+    if (tlv.len + cur > encoding.size())
+        return false;
+
+    tlv.value = TlvValues(encoding.begin() + cur, encoding.begin() + cur + tlv.len);
+    cur += tlv.len;
+
+    return true;
+}
+
+bool NostrBech32::parseTlvs(BytesArray &encoding, std::vector<NostrTlv> &tlvs)
+{
+    int cur = 0;
+    NostrTlv tlv;
+
+    while (tlvs.size() < MAX_TLVS && parseTlv(encoding, tlv, cur))
+        tlvs.push_back(tlv);
+
+    if (tlvs.size() == 0)
+        return false;
+
+    return true;
+}
+
+bool NostrBech32::findTlv(std::vector<NostrTlv> &tlvs, uint8_t type, NostrTlv &found_tlv)
+{
+    for (NostrTlv tlv : tlvs)
+    {
+        if (tlv.type == type)
+        {
+            found_tlv = tlv;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool NostrBech32::tlvToRelays(std::vector<NostrTlv> &tlvs, Relays &relays)
+{
+    for (NostrTlv tlv : tlvs)
+    {
+        if (tlv.type != TLV_RELAY)
+            continue;
+
+        relays.push_back(std::string(tlv.value.begin(), tlv.value.end()));
+        if (relays.size() > MAX_RELAYS)
+            break;
+    }
+    return true;
+}
+
+bool NostrBech32::parseNostrBech32Npub(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    bool ret = convertByteArrayToHexString(encoding, parsed.data.npub.pubkey);
+    if (!ret)
+    {
+        std::cerr << "Error: 'convertByteArrayToHexString'\n";
+        return false;
+    }
+    return true;
+}
+
+bool NostrBech32::parseNostrBech32Note(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    bool ret = convertByteArrayToHexString(encoding, parsed.data.note.event_id);
+    if (!ret)
+    {
+        std::cerr << "Error: 'convertByteArrayToHexString'\n";
+        return false;
+    }
+    return true;
+}
+
+
+bool NostrBech32::parseNostrBech32Nsec(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    bool ret = convertByteArrayToHexString(encoding, parsed.data.nsec.privkey);
+    if (!ret)
+    {
+        std::cerr << "Error: 'convertByteArrayToHexString'\n";
+        return false;
+    }
+    return true;
+}
+
+
+bool NostrBech32::parseNostrBech32Nprofile(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    std::vector<NostrTlv> tlvs;
+    NostrTlv tlv;
+
+    bool ret = parseTlvs(encoding, tlvs);
+    if(!ret)
+    {
+        std::cerr << "Error: 'parseTlvs'\n";
+        return false;
+    }
+
+    ret = findTlv(tlvs, TLV_SPECIAL, tlv);
+    if(!ret)
+    {
+        std::cerr << "Error: 'findTlv:TLV_SPECIAL'\n";
+        return false;
+    }
+    if (tlv.len != KEY_LENGTH)
+    {
+        std::cerr << "Expected pubkey of length 32 bytes\n";
+        return false;
+    }
+
+    ret = convertByteArrayToHexString(tlv.value, parsed.data.nprofile.pubkey);
+    if (!ret)
+    {
+        std::cerr << "Error: 'convertByteArrayToHexString'\n";
+        return false;
+    }
+
+    ret = tlvToRelays(tlvs, parsed.data.nprofile.relays);
+    if (!ret)
+    {
+        std::cerr << "Error: 'tlvToRelays'\n";
+        return false;
+    }
+    return true;
+}
+
+bool NostrBech32::parseNostrBech32Nevent(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    std::vector<NostrTlv> tlvs;
+    NostrTlv tlv;
+
+    bool ret = parseTlvs(encoding, tlvs);
+    if(!ret)
+    {
+        std::cerr << "Error: 'parseTlvs'\n";
+        return false;
+    }
+
+    // find event id
+    ret = findTlv(tlvs, TLV_SPECIAL, tlv);
+    if(!ret)
+    {
+        std::cerr << "Error: 'findTlv:TLV_SPECIAL'\n";
+        return false;
+    }
+
+    if (tlv.len != KEY_LENGTH)
+    {
+        std::cerr << "Expected event id of length 32 bytes\n";
+        return false;
+    }
+    ret = convertByteArrayToHexString(tlv.value, parsed.data.nevent.event_id);
+
+    // find pubkey
+    ret = findTlv(tlvs, TLV_AUTHOR, tlv);
+    if(!ret)
+    {
+        parsed.data.nevent.pubkey = "";
+    }
+    else
+    {
+        if (tlv.len != KEY_LENGTH)
+        {
+            std::cerr << "Expected pubkey of length 32 bytes\n";
+            return false;
+        }
+        ret = convertByteArrayToHexString(tlv.value, parsed.data.nevent.pubkey);
+        if (!ret)
+        {
+            std::cerr << "Error: 'convertByteArrayToHexString'\n";
+            return false;
+        }
+    }
+    ret = findTlv(tlvs, TLV_KIND, tlv);
+    if (ret)
+    {
+        if (tlv.len != 4)
+        {
+            std::cerr << "Error: tlv for kind does not have 4 bytes\n";
+            return false;
+        }
+        parsed.data.nevent.has_kind = true;
+        parsed.data.nevent.kind = 0;
+
+        // convert 4 bytes in big-endian to kind in uint32
+        for(int i=0; i<4; i++)
+        {
+            parsed.data.nevent.kind += (tlv.value[i] & 0xFF) << (8*(3 - i));
+        }
+    }
+    else
+        parsed.data.nevent.has_kind = false;
+
+    ret = tlvToRelays(tlvs, parsed.data.nevent.relays);
+    if (!ret)
+    {
+        std::cerr << "Error: 'tlvToRelays'\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool NostrBech32::parseNostrBech32Naddr(BytesArray &encoding, NostrBech32Encoding &parsed)
+{
+    std::vector<NostrTlv> tlvs;
+    NostrTlv tlv;
+
+    bool ret = parseTlvs(encoding, tlvs);
+    if(!ret)
+    {
+        std::cerr << "Error: 'parseTlvs'\n";
+        return false;
+    }
+
+    // find 'd' tag
+    ret = findTlv(tlvs, TLV_SPECIAL, tlv);
+    if(!ret)
+    {
+        std::cerr << "Error: 'findTlv:TLV_SPECIAL'\n";
+        return false;
+    }
+    parsed.data.naddr.tag = std::string(tlv.value.begin(), tlv.value.end());
+
+    // find pubkey
+    ret = findTlv(tlvs, TLV_AUTHOR, tlv);
+    if(!ret)
+    {
+        std::cerr << "Error: 'findTlv:TLV_AUTHOR'\n";
+        return false;
+    }
+    ret = convertByteArrayToHexString(tlv.value, parsed.data.naddr.pubkey);
+    if (!ret)
+    {
+        std::cerr << "Error: 'convertByteArrayToHexString'\n";
+        return false;
+    }
+
+    // find kind
+    ret = findTlv(tlvs, TLV_KIND, tlv);
+    if(!ret)
+    {
+        std::cerr << "Error: 'findTlv:TLV_KIND'\n";
+        return false;
+    }
+
+    if (tlv.len != 4)
+    {
+        std::cerr << "Error: tlv for kind does not have 4 bytes\n";
+        return false;
+    }
+
+    // convert 4 bytes in big-endian to kind in uint32
+    parsed.data.naddr.kind = 0;
+    for(int i=0; i<4; i++)
+    {
+        parsed.data.naddr.kind += (tlv.value[i] & 0xFF) << (8*(3 - i));
+    }
+
+    ret = tlvToRelays(tlvs, parsed.data.naddr.relays);
+    if (!ret)
+    {
+        std::cerr << "Error: 'tlvToRelays'\n";
+        return false;
+    }
+
+    return true;
+
+}
+
+
+bool NostrBech32::parseNostrBech32(std::string &encoding, NostrBech32Encoding &parsed)
+{
+    std::string hrp;
+    BytesArray data, unsquashed_data;
+
+    if (Bech32::decodeLen(hrp, data, encoding, MAX_INPUT_LENGTH) != BECH32_ENCODING_BECH32)
+    {
+        std::cerr << "Error: 'Bech32::decodeLen'\n";
+        return false;
+    }
+
+    bool ret = Bech32::convertBits(unsquashed_data, FROM_BITS, data, TO_BITS, 0);
+    if (!ret)
+    {
+        std::cerr << "Error: 'Bech32::convertBits'\n";
+        return false;
+    }
+
+    if (hrp == "note")
+        parsed.type = NOSTR_BECH32_NOTE;
+    else if (hrp == "npub")
+        parsed.type = NOSTR_BECH32_NPUB;
+    else if (hrp == "nsec")
+        parsed.type = NOSTR_BECH32_NSEC;
+    else if (hrp == "nprofile")
+        parsed.type = NOSTR_BECH32_NPROFILE;
+    else if (hrp == "nevent")
+        parsed.type = NOSTR_BECH32_NEVENT;
+    else if (hrp == "naddr")
+        parsed.type = NOSTR_BECH32_NADDR;
+    else
+        goto unrecognized_prefix;
+
+    switch (parsed.type)
+    {
+    case NOSTR_BECH32_NOTE:
+        ret = parseNostrBech32Note(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Note'\n";
+            return false;
+        }
+        break;
+    case NOSTR_BECH32_NPUB:
+        ret = parseNostrBech32Npub(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Npub'\n";
+            return false;
+        }
+        break;
+    case NOSTR_BECH32_NSEC:
+        ret = parseNostrBech32Nsec(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Nsec'\n";
+            return false;
+        }
+        break;
+
+    case NOSTR_BECH32_NPROFILE:
+        ret = parseNostrBech32Nprofile(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Nprofile'\n";
+            return false;
+        }
+        break;
+    case NOSTR_BECH32_NEVENT:
+        ret = parseNostrBech32Nevent(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Nevent'\n";
+            return false;
+        }
+        break;
+
+    case NOSTR_BECH32_NADDR:
+        ret = parseNostrBech32Naddr(unsquashed_data, parsed);
+        if (!ret)
+        {
+            std::cerr << "Error: 'parseNostrBech32Naddr'\n";
+            return false;
+        }
+        break;
+
+    default:
+        goto unrecognized_prefix;
+        break;
+    }
+
+    return true;
+
+unrecognized_prefix:
+    std::cerr << "Unrecognized prefix: " << hrp << std::endl;
+    return false;
+}
 
 }
 } // namespace name

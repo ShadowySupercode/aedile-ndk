@@ -111,184 +111,106 @@ TEST_F(Bech32Test, NaddrEncoding) {
     ASSERT_EQ(expectedEncoding.compare(encoding), 0);
 }
 
-// TEST_F(Bech32Test, NsecDecoding) {
-//     char encoded_nsec[KEY_LENGTH*2 + 1] = "nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5";
-//     char expected_privkey[KEY_LENGTH*2 + 1] = "67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa";
-//     char privkey[KEY_LENGTH*2 + 1];
+TEST_F(Bech32Test, NpubDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
-//     struct nostr_bech32 nsec;
-//     nsec.type = NOSTR_BECH32_NPUB;
-//     cursor cur;
-//     make_cursor((uint8_t*)encoded_nsec, (uint8_t*)encoded_nsec + strlen(encoded_nsec), &cur);
-//     parse_nostr_bech32(&cur, &nsec);
+    std::string encoding = "npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6";
+    std::string expected_pubkey = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
 
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(privkey + i*2, "%.2x", nsec.data.nsec.privkey[i]);
-//     }
+    NostrBech32Encoding parsed;
+    if (!encoder.parseNostrBech32(encoding, parsed))
+        FAIL() << "Failed to decode npub";
 
-//     ASSERT_EQ(strcmp(expected_privkey, privkey), 0);
-// }
+    ASSERT_EQ(NOSTR_BECH32_NPUB, parsed.type);
+    ASSERT_EQ(expected_pubkey, parsed.data.npub.pubkey);
+}
 
-// TEST_F(Bech32Test, NoteDecoding) {
-//     char encoded_note[KEY_LENGTH*2 + 1] = "note10nrucl4e5yqjq7ddau4ua9gq3jpq7a795y4udmg6ytkkmduamz7semt62g";
-//     char expected_id[KEY_LENGTH*2 + 1] = "7cc7cc7eb9a1012079adef2bce95008c820f77c5a12bc6ed1a22ed6db79dd8bd";
-//     char id[KEY_LENGTH*2 + 1];
+TEST_F(Bech32Test, NsecDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
-//     struct nostr_bech32 note;
-//     note.type = NOSTR_BECH32_NOTE;
-//     cursor cur;
-//     make_cursor((uint8_t*)encoded_note, (uint8_t*)encoded_note + strlen(encoded_note), &cur);
-//     parse_nostr_bech32(&cur, &note);
+    std::string encoding = "nsec1vl029mgpspedva04g90vltkh6fvh240zqtv9k0t9af8935ke9laqsnlfe5";
+    std::string expected_privkey = "67dea2ed018072d675f5415ecfaed7d2597555e202d85b3d65ea4e58d2d92ffa";
 
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(id + i*2, "%.2x", note.data.note.event_id[i]);
-//     }
+    NostrBech32Encoding parsed;
+    if (!encoder.parseNostrBech32(encoding, parsed))
+        FAIL() << "Failed to decode nsec";
 
-//     ASSERT_EQ(strcmp(expected_id, id), 0);
-// }
+    ASSERT_EQ(NOSTR_BECH32_NSEC, parsed.type);
+    ASSERT_EQ(expected_privkey, parsed.data.nsec.privkey);
+}
 
-// TEST_F(Bech32Test, NprofileDecoding) {
-//     char encoded_profile[132] = "nprofile1qqsrhuxx8l9ex335q7he0f09aej04zpazpl0ne2cgukyawd24mayt8gpp4mhxue69uhhytnc9e3k7mgpz4mhxue69uhkg6nzv9ejuumpv34kytnrdaksjlyr9p";
-//     char expected_pubkey[65] = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
-//     char *expected_relays[2] = {"wss://r.x.com", "wss://djbas.sadkb.com"};
+TEST_F(Bech32Test, NoteDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
-//     struct nostr_bech32 nprofile;
+    std::string encoding = "note10nrucl4e5yqjq7ddau4ua9gq3jpq7a795y4udmg6ytkkmduamz7semt62g";
+    std::string expected_id = "7cc7cc7eb9a1012079adef2bce95008c820f77c5a12bc6ed1a22ed6db79dd8bd";
 
-//     nprofile.buffer = (uint8_t *)encoded_profile;
-//     nprofile.buflen = 132;
-//     nprofile.type = NOSTR_BECH32_NPROFILE;
+    NostrBech32Encoding parsed;
+    if (!encoder.parseNostrBech32(encoding, parsed))
+        FAIL() << "Failed to decode note";
 
-//     cursor cur;
-//     make_cursor(nprofile.buffer, nprofile.buffer + nprofile.buflen, &cur);
+    ASSERT_EQ(NOSTR_BECH32_NOTE, parsed.type);
+    ASSERT_EQ(expected_id, parsed.data.note.event_id);
+}
 
-//     parse_nostr_bech32(&cur, &nprofile);
+TEST_F(Bech32Test, NprofileDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
-//     int num_relays = nprofile.data.nprofile.relays.num_relays;
+    std::string encoding = "nprofile1qqsrhuxx8l9ex335q7he0f09aej04zpazpl0ne2cgukyawd24mayt8gpp4mhxue69uhhytnc9e3k7mgpz4mhxue69uhkg6nzv9ejuumpv34kytnrdaksjlyr9p";
+    std::string expected_pubkey = "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d";
+    Relays expected_relays = {"wss://r.x.com", "wss://djbas.sadkb.com"};
 
-//     char pubkey[2*KEY_LENGTH + 1];
-//     char *relays[num_relays];
+    NostrBech32Encoding parsed;
+    if (!encoder.parseNostrBech32(encoding, parsed))
+       FAIL() << "Failed to decode note";
 
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(pubkey + i*2, "%.2x", nprofile.data.nprofile.pubkey[i]);
-//     }
-//     ASSERT_EQ(
-//         strcmp(pubkey, expected_pubkey), 0
-//     );
+    ASSERT_EQ(NOSTR_BECH32_NPROFILE, parsed.type);
+    ASSERT_EQ(expected_pubkey, parsed.data.nprofile.pubkey);
+    ASSERT_EQ(expected_relays.size(), parsed.data.nprofile.relays.size());
+    for (int i=0; i<expected_relays.size(); i++)
+        ASSERT_EQ(expected_relays[i], parsed.data.nprofile.relays[i]);
+}
 
-//     ASSERT_EQ(num_relays, 2);
+TEST_F(Bech32Test, NaddrDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
-//     for (int i=0; i<num_relays; i++) {
-//         size_t length = nprofile.data.nprofile.relays.relays[i].end - nprofile.data.nprofile.relays.relays[i].start;
-//         relays[i] = (char *)malloc(length);
-//         strncpy(relays[i], nprofile.data.nprofile.relays.relays[i].start, length);
-//         ASSERT_EQ(strcmp(relays[i], expected_relays[i]), 0);
-//         free(relays[i]);
-//     }
-// }
+    std::string expected_tag = "mfayffebPrMI520ftzIlE";
+    std::string expected_pubkey = "dc4cd086cd7ce5b1832adf4fdd1211289880d2c7e295bcb0e684c01acee77c06";
+    uint32_t expected_kind = 30023;
 
-// TEST_F(Bech32Test, NeventDecoding) {
-//     char encoded_nevent[163] = "nevent1qqsx5u4fcsjyw3d3lz7ejfc2z5nvjpwaj90kkyrpqcvx8a9656ctwyqpzamhxue69uhhyetvv9ujumn0wd68ytnzv9hxgtczyqrgnh6cg75dxdmgjtdzjc3d0s8ac8h3jk85h3z8rkgfv64paj5lyznxtln";
-//     char expected_pubkey[2*KEY_LENGTH + 1] = "0689df5847a8d3376892da29622d7c0fdc1ef1958f4bc4471d90966aa1eca9f2";
-//     char expected_id[2*KEY_LENGTH + 1] = "6a72a9c4244745b1f8bd99270a1526c905dd915f6b1061061863f4baa6b0b710";
+    NostrBech32Encoding parsed;
+    std::string encoding = "naddr1qq2k6enp09nxvetz2pey6jf4xgcxvar6f9ky2q3qm3xdppkd0njmrqe2ma8a6ys39zvgp5k8u22mev8xsnqp4nh80srqxpqqqp65wfq7ufy";
 
-//     char *expected_relays[1] = {"wss://relay.nostr.band/"};
+    if (!encoder.parseNostrBech32(encoding, parsed))
+        FAIL() << "Failed to decode naddr";
 
-//     uint32_t expected_kind = 1;
+    ASSERT_EQ(NOSTR_BECH32_NADDR, parsed.type);
+    ASSERT_EQ(expected_tag, parsed.data.naddr.tag);
 
-//     struct nostr_bech32 nevent;
+    ASSERT_EQ(expected_pubkey, parsed.data.naddr.pubkey);
+    ASSERT_EQ(expected_kind, parsed.data.naddr.kind);
+}
 
-//     nevent.buffer = (uint8_t *)encoded_nevent;
-//     nevent.buflen = 163;
-//     nevent.type = NOSTR_BECH32_NEVENT;
+TEST_F(Bech32Test, NeventDecoding) {
+    NostrBech32 encoder = NostrBech32();
 
+    std::string encoding = "nevent1qqsx5u4fcsjyw3d3lz7ejfc2z5nvjpwaj90kkyrpqcvx8a9656ctwyqpzamhxue69uhhyetvv9ujumn0wd68ytnzv9hxgtczyqrgnh6cg75dxdmgjtdzjc3d0s8ac8h3jk85h3z8rkgfv64paj5lyznxtln";
+    std::string expected_pubkey = "0689df5847a8d3376892da29622d7c0fdc1ef1958f4bc4471d90966aa1eca9f2";
+    std::string expected_id = "6a72a9c4244745b1f8bd99270a1526c905dd915f6b1061061863f4baa6b0b710";
+    Relays expected_relays = {"wss://relay.nostr.band/"};
 
-//     cursor cur;
-//     make_cursor(nevent.buffer, nevent.buffer + nevent.buflen, &cur);
+    NostrBech32Encoding parsed;
+    if (!encoder.parseNostrBech32(encoding, parsed))
+       FAIL() << "Failed to decode note";
 
-//     parse_nostr_bech32(&cur, &nevent);
-//     char id[2*KEY_LENGTH + 1];
-//     char pubkey[2*KEY_LENGTH + 1];
+    ASSERT_EQ(NOSTR_BECH32_NEVENT, parsed.type);
+    ASSERT_EQ(expected_pubkey, parsed.data.nevent.pubkey);
+    ASSERT_EQ(expected_id, parsed.data.nevent.event_id);
 
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(id + i*2, "%.2x", nevent.data.nevent.event_id[i]);
-//     }
+    ASSERT_EQ(expected_relays.size(), parsed.data.nevent.relays.size());
+    for (int i=0; i<expected_relays.size(); i++)
+        ASSERT_EQ(expected_relays[i], parsed.data.nevent.relays[i]);
 
-//     ASSERT_EQ(
-//         strcmp(id, expected_id), 0
-//     );
-
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(pubkey + i*2, "%.2x", nevent.data.nevent.pubkey[i]);
-//     }
-
-//     ASSERT_EQ(
-//         strcmp(pubkey, expected_pubkey), 0
-//     );
-
-//     int num_relays = nevent.data.nevent.relays.num_relays;
-//     char *relays[num_relays];
-
-
-//     for (int i = 0; i < num_relays; i++) {
-//         int length = nevent.data.nevent.relays.relays[i].end - nevent.data.nevent.relays.relays[i].start;
-//         relays[i] = (char*)malloc(length);
-//         strncpy(relays[i], nevent.data.nevent.relays.relays[i].start, length);
-//         ASSERT_EQ(strcmp(relays[i], expected_relays[i]), 0);
-//         free(relays[i]);
-//     }
-
-//     if (nevent.data.nevent.has_kind)
-//         ASSERT_EQ(expected_kind, nevent.data.nevent.kind);
-
-// }
-
-
-// TEST_F(Bech32Test, NaddrDecoding) {
-//     char encoded_naddr[141] = "naddr1qqxnzdenxu6rxvp4xyenxvpsqythwumn8ghj7un9d3shjtnwdaehgu3wvfskuep0qgs82et8gqsfjcx8fl3h8e55879zr2ufdzyas6gjw6nqlp42m0y0j2srqsqqqa285r8tkj";
-//     char expected_pubkey[65] = "75656740209960c74fe373e6943f8a21ab896889d8691276a60f86aadbc8f92a";
-//     char *expected_relays[1] = {"wss://relay.nostr.band/"};
-//     char expected_identifier[14] = "1737430513300";
-//     uint32_t expected_num_relays = 1, expected_kind = 30023;
-
-//     struct nostr_bech32 naddr;
-
-//     naddr.buffer = (uint8_t *)encoded_naddr;
-//     naddr.buflen = 141;
-//     naddr.type = NOSTR_BECH32_NADDR;
-
-//     cursor cur;
-//     make_cursor(naddr.buffer, naddr.buffer + naddr.buflen, &cur);
-//     parse_nostr_bech32(&cur, &naddr);
-//     char id[2*KEY_LENGTH + 1];
-//     char pubkey[2*KEY_LENGTH + 1];
-
-//     char *identifier = naddr.data.naddr.identifier;
-
-//     ASSERT_EQ(strcmp(expected_identifier, identifier), 0);
-
-//     for (int i=0;i<KEY_LENGTH;i++) {
-//         sprintf(pubkey + i*2, "%.2x", naddr.data.naddr.pubkey[i]);
-//     }
-//     ASSERT_EQ(strcmp(expected_pubkey, pubkey), 0);
-
-//     int num_relays = naddr.data.naddr.relays.num_relays;
-
-//     ASSERT_EQ(num_relays, expected_num_relays);
-
-//     char *relays[num_relays];
-//     for (int i = 0; i < num_relays; i++) {
-//         int length = naddr.data.naddr.relays.relays[i].end - naddr.data.naddr.relays.relays[i].start;
-//         relays[i] = (char*)malloc(length);
-//         strncpy(relays[i], naddr.data.naddr.relays.relays[i].start, length);
-
-//         ASSERT_EQ(strcmp(expected_relays[i], relays[i]), 0);
-
-
-//         free(relays[i]);
-//     }
-//     ASSERT_EQ(naddr.data.naddr.kind, expected_kind);
-// }
-
-
-
+    ASSERT_EQ(false, parsed.data.nevent.has_kind);
+}
 }

@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <sstream>
 
 #define MAX_INPUT_LENGTH 256
 #define FROM_BITS 8

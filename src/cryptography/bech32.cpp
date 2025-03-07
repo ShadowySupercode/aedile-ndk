@@ -205,6 +205,7 @@ namespace encoding
         for (char &c : hrp)
             chk = bech32PolymodStep(chk) ^ (c & 0x1f);
 
+        size_t i = 0;
         for (uint8_t byte : input.substr(hrp.size() + 1))
         {
             int v = (byte & 0x80) ? -1 : bech32CharsetRev[(int)byte];
@@ -219,7 +220,9 @@ namespace encoding
             }
             chk = bech32PolymodStep(chk) ^ v;
 
-            data.push_back(v);
+            if(i + 6 < input.substr(hrp.size() + 1).size())
+                data.push_back(v);
+            ++i;
         }
         if (have_lower && have_upper)
         {
@@ -233,6 +236,7 @@ namespace encoding
         }
         else
         {
+            printf("HERE\n");
             return BECH32_ENCODING_NONE;
         }
     }
@@ -254,8 +258,9 @@ namespace encoding
                 out.push_back((val >> bits) & maxv);
             }
         }
-        if (pad && bits)
-            out.push_back((val << (outbits - bits)) & maxv);
+        if (pad)
+            if (bits)
+                out.push_back((val << (outbits - bits)) & maxv);
 
         else if (((val << (outbits - bits)) & maxv) || bits >= inbits)
             return 0;
