@@ -241,18 +241,16 @@ bool NostrBech32::encodeNostrBech32Naddr(NostrBech32Encoding &input, std::string
     input_hex.insert(input_hex.end(),
         input.data.naddr.tag.begin(), input.data.naddr.tag.end());
 
-    // include TLV for the relays
-    if (input.data.naddr.relays.empty())
+    // include TLV for the relays if they exist
+    // optional for naddr encoding
+    if (!input.data.naddr.relays.empty())
     {
-        std::cerr << "Relays metadata field is not optional for naddr encoding\n";
-        return false;
-    }
-
-    for (std::string relay : input.data.naddr.relays)
-    {
-        input_hex.push_back(TLV_RELAY);
-        input_hex.push_back(relay.length());
-        input_hex.insert(input_hex.end(), relay.begin(), relay.end());
+        for (std::string relay : input.data.naddr.relays)
+        {
+            input_hex.push_back(TLV_RELAY);
+            input_hex.push_back(relay.length());
+            input_hex.insert(input_hex.end(), relay.begin(), relay.end());
+        }
     }
 
     if (input.data.naddr.pubkey.empty())

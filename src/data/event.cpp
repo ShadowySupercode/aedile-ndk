@@ -2,9 +2,11 @@
 #include <stdexcept>
 
 #include "data/data.hpp"
+#include "cryptography/nostr_bech32.hpp"
 
 using namespace nlohmann;
 using namespace nostr::data;
+using namespace nostr::encoding;
 using namespace std;
 
 string Event::serialize()
@@ -138,4 +140,154 @@ void adl_serializer<Event>::from_json(const json& j, Event& event)
     {
         throw oor;
     }
+}
+
+// wrapper class implementation
+
+NostrEvent::NostrEvent()
+{
+    this->data = std::make_shared<Event>();
+}
+
+NostrEvent::NostrEvent(string jsonString)
+{
+    this->data->fromString(jsonString);
+}
+NostrEvent::NostrEvent(json j)
+{
+    this->data->fromJson(j);
+}
+NostrEvent::NostrEvent(shared_ptr<Event> e)
+{
+    this->data = e;
+}
+
+bool NostrEvent::operator==(const NostrEvent& other) const
+{
+    return this->data == other.data;
+}
+
+std::string NostrEvent::toNote()
+{
+    NostrBech32 encoder = NostrBech32();
+
+    NostrBech32Encoding input;
+    string output;
+    input.type = NOSTR_BECH32_NOTE;
+    input.data.note.event_id = this->data->id;
+
+    if(!encoder.encodeNostrBech32(input, output))
+        std::cerr << "'encoder.encodeNostrBech32' failed\n";
+
+    return output;
+}
+
+std::string NostrEvent::toNevent()
+{
+    NostrBech32 encoder = NostrBech32();
+
+    NostrBech32Encoding input;
+    string output;
+    input.type = NOSTR_BECH32_NEVENT;
+    input.data.nevent.event_id = this->data->id;
+
+    input.data.nevent.pubkey = this->data->pubkey;
+    input.data.nevent.relays = this->data->relays;
+
+    if (this->data->kind == 1)
+    {
+        input.data.nevent.has_kind = false;
+    }
+    else
+    {
+        input.data.nevent.has_kind = true;
+        input.data.nevent.kind = this->data->kind;
+    }
+
+    if(!encoder.encodeNostrBech32(input, output))
+        std::cerr << "'encoder.encodeNostrBech32' failed\n";
+
+    return output;
+}
+
+std::string NostrEvent::toNaddr()
+{
+    NostrBech32 encoder = NostrBech32();
+
+    NostrBech32Encoding input;
+    string output;
+    input.type = NOSTR_BECH32_NADDR;
+
+    // fetch 'd' tag from tags in the base event
+    input.data.naddr.tag = "";
+    for (auto tag : this->data->tags)
+    {
+        if (tag[0] == "d")
+        {
+            input.data.naddr.tag = tag[1];
+            break;
+        }
+    }
+    if (input.data.naddr.tag.empty())
+    {
+        std::cerr << "Could not find mandatory 'd' tag. Returning nullptr\n";
+        return nullptr;
+    }
+
+    input.data.naddr.pubkey = this->data->pubkey;
+    if (input.data.naddr.pubkey.empty())
+    {
+        std::cerr << "Could not find mandatory pubkey. Returning nullptr\n";
+        return nullptr;
+    }
+
+    input.data.naddr.relays = this->data->relays;
+    input.data.naddr.kind = this->data->kind;
+
+    if(!encoder.encodeNostrBech32(input, output))
+        std::cerr << "'encoder.encodeNostrBech32' failed\n";
+
+    return output;
+}
+
+
+void NostrEvent::fromNote(std::string &encoding)
+{
+    NostrBech32 parser = NostrBech32();
+    NostrBech32Encoding parsedData;
+
+    if(!parser.parseNostrBech32(encoding, parsedData))
+        std::cerr << "failed to decode Note encoding\n";
+
+    this->data->id = parsedData.data.note.event_id;
+}
+
+void NostrEvent::fromNevent(std::string &encoding)
+{
+    NostrBech32 parser = NostrBech32();
+    NostrBech32Encoding parsedData;
+
+    if(!parser.parseNostrBech32(encoding, parsedData))
+        std::cerr << "failed to decode nevent encoding\n";
+
+    this->data->id = parsedData.data.nevent.event_id;
+    this->data->pubkey = parsedData.data.nevent.pubkey;
+    this->data->relays = parsedData.data.nevent.relays;
+
+    if(parsedData.data.nevent.has_kind)
+        this->data->kind = parsedData.data.nevent.kind;
+}
+
+void NostrEvent::fromNaddr(std::string &encoding)
+{
+    NostrBech32 parser = NostrBech32();
+    NostrBech32Encoding parsedData;
+
+    if(!parser.parseNostrBech32(encoding, parsedData))
+        std::cerr << "failed to decode nevent encoding\n";
+
+    this->data->tags.push_back({"d", parsedData.data.naddr.tag});
+    this->data->pubkey = parsedData.data.naddr.pubkey;
+    this->data->relays = parsedData.data.naddr.relays;
+    this->data->kind = parsedData.data.naddr.kind;
 }
