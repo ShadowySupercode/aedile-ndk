@@ -5,9 +5,6 @@
 
 #include "bech32.hpp"
 
-#define likely(x)    __builtin_expect(!!(x), 1)
-#define unlikely(x)  __builtin_expect(!!(x), 0)
-
 #define MAX_RELAYS 10
 
 #define MAX_TLVS 16
@@ -83,7 +80,7 @@ typedef struct
 {
     uint8_t type;
     uint8_t len;
-    const TlvValues values;
+    TlvValues value;
 } NostrTlv;
 
 typedef struct {
@@ -122,6 +119,11 @@ private:
     bool parseNostrBech32Nprofile(BytesArray &encoding, NostrBech32Encoding &parsed);
     bool parseNostrBech32Nevent(BytesArray &encoding, NostrBech32Encoding &parsed);
     bool parseNostrBech32Naddr(BytesArray &encoding, NostrBech32Encoding &parsed);
+
+    bool findTlv(std::vector<NostrTlv> &tlvs, uint8_t type, NostrTlv &found_tlv);
+    bool tlvToRelays(std::vector<NostrTlv> &tlvs, Relays &relays);
+    bool parseTlv(BytesArray &encoding, NostrTlv &tlv, int &cur);
+    bool parseTlvs(BytesArray &encoding, std::vector<NostrTlv> &tlvs);
 };
 
 }
