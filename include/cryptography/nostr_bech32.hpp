@@ -102,7 +102,28 @@ typedef struct NostrBech32Encoding
 class NostrBech32
 {
 public:
+    /**
+     * @brief Given an input data structure containing pubkeys or event ids,
+     * or relays, etc, and a desired encoding type, this function will
+     * write the bech32 encoding in the string `encoding`
+     *
+     * @param input Data structure containing the data to be encoded
+     * and which type of encoding to use
+     * @param encoding Output string containing the bech32 encoding of
+     * the input data structure
+     * @return true if encoding was successful
+     */
     bool encodeNostrBech32(NostrBech32Encoding &input, std::string &encoding);
+    /**
+     * @brief Given a bech32 nostr encoding, this function will
+     * parse the encoding to extract the data and populate the `parsed`
+     * data structure accordingly.
+     *
+     * @param encoding string containing the bech32 encoding to be parsed
+     * @param parsed the data structure that will host the decoded data extracted
+     * from the encoded bech32 string.
+     * @return true if the parsing/decoding was successful.
+     */
     bool parseNostrBech32(std::string &encoding, NostrBech32Encoding &parsed);
 
 private:

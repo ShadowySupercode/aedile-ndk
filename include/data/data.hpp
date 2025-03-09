@@ -28,7 +28,6 @@ struct Event
     std::vector<std::vector<std::string>> tags; ///< Arbitrary event metadata.
     std::string content; ///< Event content.
     std::string sig; ///< Event signature created with the private key of the event creator.
-    std::vector<std::string> relays; ///< relay in which the entity the event is more likely to be found
 
     /**
      * @brief Serializes the event to a JSON object.
@@ -54,7 +53,7 @@ struct Event
     /**
      * @brief Compares two events for equality.
      * @remark Two events are considered equal if they have the same ID, since the ID is uniquely
-     * generated from the event data.  If the `id` field is empty for either event, the comparison
+     * generated from the event data. If the `id` field is empty for either event, the comparison
      * function will throw an exception.
      */
     bool operator==(const Event& other) const;
@@ -118,8 +117,6 @@ public:
     NostrEvent(std::shared_ptr<Event> e);
     bool operator==(const NostrEvent& other) const;
 
-    std::shared_ptr<Event> data;
-
     std::string toNote();
     std::string toNevent();
     std::string toNaddr();
@@ -127,6 +124,10 @@ public:
     void fromNote(std::string &encoding);
     void fromNevent(std::string &encoding);
     void fromNaddr(std::string &encoding);
+
+    // class members
+    std::shared_ptr<Event> data;
+    std::vector<std::string> relays; ///< relay in which the entity the event is more likely to be found
 };
 
 } // namespace data

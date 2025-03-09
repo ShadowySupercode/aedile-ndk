@@ -192,7 +192,7 @@ std::string NostrEvent::toNevent()
     input.data.nevent.event_id = this->data->id;
 
     input.data.nevent.pubkey = this->data->pubkey;
-    input.data.nevent.relays = this->data->relays;
+    input.data.nevent.relays = this->relays;
 
     if (this->data->kind == 1)
     {
@@ -241,7 +241,7 @@ std::string NostrEvent::toNaddr()
         return nullptr;
     }
 
-    input.data.naddr.relays = this->data->relays;
+    input.data.naddr.relays = this->relays;
     input.data.naddr.kind = this->data->kind;
 
     if(!encoder.encodeNostrBech32(input, output))
@@ -272,7 +272,7 @@ void NostrEvent::fromNevent(std::string &encoding)
 
     this->data->id = parsedData.data.nevent.event_id;
     this->data->pubkey = parsedData.data.nevent.pubkey;
-    this->data->relays = parsedData.data.nevent.relays;
+    this->relays = parsedData.data.nevent.relays;
 
     if(parsedData.data.nevent.has_kind)
         this->data->kind = parsedData.data.nevent.kind;
@@ -288,6 +288,6 @@ void NostrEvent::fromNaddr(std::string &encoding)
 
     this->data->tags.push_back({"d", parsedData.data.naddr.tag});
     this->data->pubkey = parsedData.data.naddr.pubkey;
-    this->data->relays = parsedData.data.naddr.relays;
+    this->relays = parsedData.data.naddr.relays;
     this->data->kind = parsedData.data.naddr.kind;
 }

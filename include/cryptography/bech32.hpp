@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include <iostream>
 #include <string>
@@ -57,7 +58,7 @@ public:
      * betweem nostr segwit encoding and proper bitcoin segwit encoding.
      *
      * @param output string that will contain the encoded address.
-     * @param hrp Pointer to the null-terminated human readable part to use
+     * @param hrp string containing human readable part to use
      * (chain/network specific).
      * @param ver Version of the witness program (between 0 and 16 inclusive,
      * should default to 0 when encoding a nostr address).
@@ -79,13 +80,13 @@ public:
     /**
      * @brief Decode a SegWit address
      *
-     * @param ver  Pointer to an int that will be updated to contain the witness
+     * @param ver Pointer to an int that will be updated to contain the witness
      * program version (between 0 and 16 inclusive).
-     * @param prog Pointer to a buffer of size 40 that will be updated to
+     * @param prog Vectorthat will be updated to
      * contain the witness program bytes.
-     * @param hrp Pointer to the null-terminated human readable part that is
+     * @param hrp String human readable part that is
      * expected (chain/network specific).
-     * @param addr Pointer to the null-terminated address.
+     * @param addr String containing the address.
      * @param protocol An enum to indicate whether the encoding is for bitcoin
      * or for nostr, because it is not 100% the same.
      * For Nostr, the the witversion variable is not added to the beginning
@@ -103,10 +104,10 @@ public:
     /**
      * @brief Encode a Bech32 or Bech32m string
      *
-     * @param output Pointer to a buffer of size strlen(hrp) + data_len + 8 that
-     * will be updated to contain the null-terminated Bech32 string.
-     * @param hrp Pointer to the null-terminated human readable part.
-     * @param data Pointer to an array of 5-bit values.
+     * @param output String that will be updated to
+     * contain the null-terminated Bech32 string.
+     * @param hrp String for the human readable part.
+     * @param data An array of 5-bit values.
      * @param max_input_len Maximum valid length of input (90 for segwit usage).
      * @param enc Which encoding to use (BECH32_ENCODING_BECH32{,M}).
      * @return int: 1 if successful, else 0
@@ -123,13 +124,13 @@ public:
     /**
      * @brief Decode a Bech32 or Bech32m string. Decoded address
      * will be found at the address pointed to by `data`.
-     * Will call `bech32_decode_len` if `data_len` is less than
+     * Will call `bech32_decode_len` if `data_len` is less than or equal to `max_input_len`
      *
-     * @param hrp Pointer to a buffer of size strlen(input) - 6. Will be
+     * @param hrp String for that will be
      * updated to contain the null-terminated human readable part.
-     * @param data Pointer to a buffer of size strlen(input) - 8 that will
+     * @param data Vector of size strlen(input) - 8 that will
      * hold the encoded 5-bit data values.
-     * @param input Pointer to a null-terminated Bech32 string.
+     * @param input Bech32 string.
      * @param max_input_len Maximum valid length of input (90 for segwit usage).
      * @return bech32_encoding enum to specify which bech32 was just decoded
      */
@@ -147,9 +148,9 @@ public:
      *
      * @param hrp Pointer to a buffer of size strlen(input) - 6. Will be
      * updated to contain the null-terminated human readable part.
-     * @param data Pointer to a buffer of size strlen(input) - 8 that will
+     * @param data Vector of size strlen(input) - 8 that will
      * hold the encoded 5-bit data values.
-     * @param input Pointer to a null-terminated Bech32 string.
+     * @param input Bech32 string.
      * @param max_input_len Maximum valid length of input (90 for segwit usage).
      * @return bech32_encoding enum to specify which bech32 was just decoded
      */
@@ -177,9 +178,13 @@ public:
     * @param pad boolean flag to see whether or not to pad
     * @return int 1 if function was successul, 0 if not
     */
-    static int convertBits(BytesArray &out, int outbits,
-                const BytesArray &in, int inbits,
-                int pad);
+    static int convertBits(
+        BytesArray &out,
+        int outbits,
+        const BytesArray &in,
+        int inbits,
+        int pad
+    );
 };
 }
 }
