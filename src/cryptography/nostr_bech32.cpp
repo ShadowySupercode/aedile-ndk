@@ -5,7 +5,7 @@ namespace nostr
 namespace encoding
 {
 
-// if `std::string hex_string` has an even number character
+// if `std::string hex_string` has an even number of character
 // from the set of hexadecimal digits, then return true
 bool isValidHex(std::string hex_string)
 {
@@ -34,7 +34,7 @@ bool convertHexStringToByteArray(std::string &hex, BytesArray &array)
     std::size_t arraySize = hex.size() / 2;
     for(int i=0; i<arraySize; i++)
     {
-        array.push_back(std::stol(hex.substr(2*i, 2), nullptr, 16));
+        array.push_back(std::stoi(hex.substr(2*i, 2), nullptr, 16));
     }
 
     return true;
