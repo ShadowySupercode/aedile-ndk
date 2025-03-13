@@ -307,55 +307,36 @@ bool NostrBech32::encodeNostrBech32(NostrBech32Encoding &input, std::string &enc
     case NOSTR_BECH32_NOTE:
         ret = encodeNostrBech32Note(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Note'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Note'");
         break;
     case NOSTR_BECH32_NPUB:
         ret = encodeNostrBech32Npub(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Npub'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Npub'");
         break;
     case NOSTR_BECH32_NPROFILE:
         ret = encodeNostrBech32Nprofile(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Nprofile'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Nprofile'");
         break;
     case NOSTR_BECH32_NEVENT:
         ret = encodeNostrBech32Nevent(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Nevent'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Nevent'");
         break;
 
     case NOSTR_BECH32_NADDR:
         ret = encodeNostrBech32Naddr(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Naddr'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Naddr'");
         break;
     case NOSTR_BECH32_NSEC:
         ret = encodeNostrBech32Nsec(input, encoding);
         if(!ret)
-        {
-            std::cerr << "Error: 'encodeNostrBech32Nsec'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'encodeNostrBech32Nsec'");
         break;
     default:
-        std::cerr << "Error: unrecognized encoding\n";
-        return false;
+        throw std::runtime_error("Error: unrecognized encoding");
         break;
     }
     return true;
@@ -680,52 +661,34 @@ bool NostrBech32::parseNostrBech32(std::string &encoding, NostrBech32Encoding &p
     case NOSTR_BECH32_NOTE:
         ret = parseNostrBech32Note(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Note'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Note'");
         break;
     case NOSTR_BECH32_NPUB:
         ret = parseNostrBech32Npub(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Npub'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Npub'");
         break;
     case NOSTR_BECH32_NSEC:
         ret = parseNostrBech32Nsec(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Nsec'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Nsec'");
         break;
 
     case NOSTR_BECH32_NPROFILE:
         ret = parseNostrBech32Nprofile(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Nprofile'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Nprofile'");
         break;
     case NOSTR_BECH32_NEVENT:
         ret = parseNostrBech32Nevent(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Nevent'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Nevent'");
         break;
 
     case NOSTR_BECH32_NADDR:
         ret = parseNostrBech32Naddr(unsquashed_data, parsed);
         if (!ret)
-        {
-            std::cerr << "Error: 'parseNostrBech32Naddr'\n";
-            return false;
-        }
+            throw std::runtime_error("Error: 'parseNostrBech32Naddr'");
         break;
 
     default:
@@ -736,8 +699,7 @@ bool NostrBech32::parseNostrBech32(std::string &encoding, NostrBech32Encoding &p
     return true;
 
 unrecognized_prefix:
-    std::cerr << "Unrecognized prefix: " << hrp << std::endl;
-    return false;
+    throw std::invalid_argument("Unrecognized human readable prefix");
 }
 
 }
